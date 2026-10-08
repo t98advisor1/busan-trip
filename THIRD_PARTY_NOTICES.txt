@@ -1,0 +1,20 @@
+제3자 자료 및 서비스 안내
+
+직접 구현한 부분: 일정·팀별 코스 연결, 장소 미션, 방탈출 진행 화면,
+스탬프·학습 기록 연결, 사진 프레임 합성·다운로드, 제출 인터페이스,
+Google Sheets/Drive 연계 코드, 내부 사다리·랜덤 뽑기.
+
+사용 라이브러리:
+- React / React DOM: MIT, https://github.com/facebook/react
+- Next.js: MIT, https://github.com/vercel/next.js
+- Tailwind CSS: MIT, https://github.com/tailwindlabs/tailwindcss
+- Vite: MIT, https://github.com/vitejs/vite
+- Leaflet 1.9.4: BSD-2-Clause, CDN으로 로드
+  https://leafletjs.com/  https://github.com/Leaflet/Leaflet/blob/v1.9.4/LICENSE
+- 지도 데이터: OpenStreetMap contributors, 지도 내 출처 표시 유지
+  https://www.openstreetmap.org/copyright
+
+www/assets/*.LICENSE.txt 및 라이브러리 배포물의 고지문은 유지합니다.
+지도 타일·영상·학습자료·외부 게임은 각 제공처의 정책과 권리를 따릅니다.
+외부 서비스 링크는 자체 개발 또는 웨일 공식 연동을 의미하지 않습니다.
+신천고등학교 마크와 대표 이미지의 출품·공개 사용 권한은 제출 전 확인해야 합니다.
