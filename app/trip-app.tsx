@@ -124,6 +124,11 @@ const appPages: AppPageDefinition[] = [
   { id: "games", label: "게임", hash: "games" },
 ];
 
+function getAppPageNumber(pageId: AppPageId) {
+  const pageIndex = appPages.findIndex((page) => page.id === pageId);
+  return String(pageIndex + 1).padStart(2, "0");
+}
+
 function getAppPageFromHash(hash: string): AppPageId {
   const normalized = hash.replace(/^#/, "");
   if (normalized === "ladder-game" || normalized === "random-draw") return "games";
@@ -4929,7 +4934,7 @@ export default function TripApp() {
       <section className="trip-dashboard" id="schedule">
         <div className="map-panel">
           <div className="section-title">
-            <span>01</span>
+            <span>{getAppPageNumber("map")}</span>
             <div>
               <h2>수학여행 지도</h2>
               <p>{activeTeam}팀의 일차를 고르시면 이동 경로와 체크 상태가 지도에 표시됩니다.</p>
@@ -5002,7 +5007,7 @@ export default function TripApp() {
 
         <div className="day-panel" id="checklist">
           <div className="section-title">
-            <span>02</span>
+            <span>{getAppPageNumber("schedule")}</span>
             <div>
               <h2>일정 체크리스트</h2>
               <p>도착했거나 끝난 일정을 체크하시면 지도 마커도 완료 상태로 바뀝니다.</p>
@@ -5185,7 +5190,7 @@ export default function TripApp() {
 
         <div className="mission-console" id="missions">
           <div className="section-title compact">
-            <span>03</span>
+            <span>{getAppPageNumber("missions")}</span>
             <div>
               <h2>장소 미션</h2>
               <p>퀴즈를 맞히시거나 현장 코드를 입력하시면 스탬프와 일정 체크가 함께 기록됩니다.</p>
@@ -5303,7 +5308,7 @@ export default function TripApp() {
 
       <section className="photo-album-section" id="photo-album">
         <div className="section-title">
-          <span>04</span>
+          <span>{getAppPageNumber("photo")}</span>
           <div>
             <h2>폴라로이드 사진첩</h2>
             <p>선택한 일정의 사진을 업로드하고 미니, 스퀘어, 와이드 규격으로 저장합니다.</p>
@@ -5486,7 +5491,7 @@ export default function TripApp() {
 
       <section className="passport-section" id="stamp-passport">
         <div className="section-title">
-          <span>05</span>
+          <span>{getAppPageNumber("passport")}</span>
           <div>
             <h2>스탬프 여권</h2>
             <p>각 장소를 누르시면 지도와 관련 미션으로 바로 이동합니다.</p>
@@ -5541,7 +5546,7 @@ export default function TripApp() {
 
       <section className="learning-section" id="learning">
         <div className="section-title">
-          <span>06</span>
+          <span>{getAppPageNumber("learning")}</span>
           <div>
             <h2>장소별 학습 포인트</h2>
             <p>교과 활동지의 질문으로 바로 옮겨갈 수 있는 짧은 생각거리입니다.</p>
@@ -5564,7 +5569,7 @@ export default function TripApp() {
 
       <section className="submit-section" id="submit-record">
         <div className="section-title">
-          <span>07</span>
+          <span>{getAppPageNumber("record")}</span>
           <div>
             <h2>수학여행 기록 제출</h2>
             <p>학생 정보, 퀴즈 답변, 스탬프 투어 기록, 소감문을 Google Sheets 백엔드로 보냅니다.</p>
@@ -5775,7 +5780,7 @@ export default function TripApp() {
 
       <section className="game-hub" id="games">
         <div className="section-title">
-          <span>08</span>
+          <span>{getAppPageNumber("games")}</span>
           <div>
             <h2>연계 게임 허브</h2>
             <p>수학여행 중 쉬는 시간이나 모둠 활동에 연결할 수 있는 게임입니다.</p>
@@ -5817,7 +5822,7 @@ export default function TripApp() {
 
       <section className="draw-section standalone-draw" id="ladder-game">
         <div className="section-title">
-          <span>09</span>
+          <span>{getAppPageNumber("games")}</span>
           <div>
             <h2>사다리타기 게임</h2>
             <p>이름과 결과를 줄마다 입력하시면 발표 순서나 역할을 재미있게 뽑으실 수 있습니다.</p>
@@ -5862,7 +5867,7 @@ export default function TripApp() {
 
       <section className="draw-section standalone-draw" id="random-draw">
         <div className="section-title">
-          <span>10</span>
+          <span>{getAppPageNumber("games")}</span>
           <div>
             <h2>랜덤 뽑기</h2>
             <p>학생 이름, 장소, 미션 주제를 넣고 하나를 빠르게 뽑으실 수 있습니다.</p>
