@@ -9837,6 +9837,13 @@ th {
     #0b202e;
 }
 
+.escape-ranking-board .ranking-privacy-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.78;
+}
+
 .escape-ranking-board.compact-ranking {
   max-height: none;
 }

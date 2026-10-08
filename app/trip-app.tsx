@@ -169,6 +169,7 @@ type EscapeRankEntry = {
   videoLearningScore?: number;
   elapsedSeconds: number;
   createdAt: string;
+  ownerKey?: string;
 };
 
 type VideoLearningProgress = Record<
@@ -2611,13 +2612,38 @@ async function downloadInstantPhotoCard({
   URL.revokeObjectURL(href);
 }
 
-function mergeEscapeRankings(items: EscapeRankEntry[]) {
-  const latestByStudentAndMission = new Map<string, EscapeRankEntry>();
+function isMaskedRankEntry(entry: EscapeRankEntry) {
+  return `${entry.studentNo ?? ""}${entry.name ?? ""}`.includes("*");
+}
 
+function getRankOwnerKey(entry: EscapeRankEntry) {
+  return entry.ownerKey || entry.studentNo || entry.name || "익명";
+}
+
+function mergeEscapeRankings(items: EscapeRankEntry[]) {
+  // The shared ranking masks other students' 학번·이름. When the same record
+  // exists on this device unmasked, keep the local copy and learn its ownerKey.
+  const byId = new Map<string, EscapeRankEntry>();
+  const withoutId: EscapeRankEntry[] = [];
   items.forEach((entry) => {
     if (!entry?.missionId || typeof entry.score !== "number") return;
-    const ownerKey = entry.studentNo || entry.name || "익명";
-    const key = `${entry.missionId}:${ownerKey}`;
+    if (!entry.id) {
+      withoutId.push(entry);
+      return;
+    }
+    const current = byId.get(entry.id);
+    if (!current) {
+      byId.set(entry.id, entry);
+      return;
+    }
+    const keep = isMaskedRankEntry(entry) && !isMaskedRankEntry(current) ? current : entry;
+    const other = keep === entry ? current : entry;
+    byId.set(entry.id, { ...keep, ownerKey: keep.ownerKey || other.ownerKey });
+  });
+
+  const latestByStudentAndMission = new Map<string, EscapeRankEntry>();
+  [...byId.values(), ...withoutId].forEach((entry) => {
+    const key = `${entry.missionId}:${getRankOwnerKey(entry)}`;
     const current = latestByStudentAndMission.get(key);
     const entryTime = new Date(entry.createdAt).getTime();
     const currentTime = current ? new Date(current.createdAt).getTime() : 0;
@@ -2637,7 +2663,7 @@ function aggregateEscapeRankings(items: EscapeRankEntry[]) {
   items
     .filter((entry) => entry.missionId.startsWith("story-day-"))
     .forEach((entry) => {
-      const ownerKey = entry.studentNo || entry.name || "익명";
+      const ownerKey = getRankOwnerKey(entry);
       const current = totals.get(ownerKey);
       if (!current) {
         totals.set(ownerKey, {
@@ -3096,34 +3122,51 @@ export default function TripApp() {
     [completed],
   );
   const studentKey = studentProfile.studentNo.trim() || studentProfile.name.trim();
-  const myEscapeScore = useMemo(() => {
-    if (!studentKey) return 0;
-    return escapeRankings
-      .filter(
-        (entry) =>
-          entry.missionId.startsWith("story-day-") &&
-          (entry.studentNo || entry.name) === studentKey,
-      )
-      .reduce((sum, entry) => sum + entry.score, 0);
-  }, [escapeRankings, studentKey]);
-  const totalScore = score + myEscapeScore;
-  const topEscapeRankings = useMemo(
-    () => aggregateEscapeRankings(escapeRankings),
-    [escapeRankings],
-  );
-  const completedEscapeChapterIds = useMemo(
+  const myRankOwnerKeys = useMemo(
     () =>
       new Set(
         escapeRankings
           .filter(
             (entry) =>
               Boolean(studentKey) &&
+              !isMaskedRankEntry(entry) &&
               (entry.studentNo || entry.name) === studentKey &&
-              entry.missionId.startsWith("story-day-"),
+              Boolean(entry.ownerKey),
           )
-          .map((entry) => entry.missionId),
+          .map((entry) => entry.ownerKey as string),
       ),
     [escapeRankings, studentKey],
+  );
+  const myStoryRankings = useMemo(() => {
+    if (!studentKey) return [];
+    const latestByChapter = new Map<string, EscapeRankEntry>();
+    escapeRankings
+      .filter(
+        (entry) =>
+          entry.missionId.startsWith("story-day-") &&
+          ((!isMaskedRankEntry(entry) && (entry.studentNo || entry.name) === studentKey) ||
+            (Boolean(entry.ownerKey) && myRankOwnerKeys.has(entry.ownerKey as string))),
+      )
+      .forEach((entry) => {
+        const current = latestByChapter.get(entry.missionId);
+        if (!current || new Date(entry.createdAt).getTime() >= new Date(current.createdAt).getTime()) {
+          latestByChapter.set(entry.missionId, entry);
+        }
+      });
+    return [...latestByChapter.values()];
+  }, [escapeRankings, studentKey, myRankOwnerKeys]);
+  const myEscapeScore = useMemo(
+    () => myStoryRankings.reduce((sum, entry) => sum + entry.score, 0),
+    [myStoryRankings],
+  );
+  const totalScore = score + myEscapeScore;
+  const topEscapeRankings = useMemo(
+    () => aggregateEscapeRankings(escapeRankings),
+    [escapeRankings],
+  );
+  const completedEscapeChapterIds = useMemo(
+    () => new Set(myStoryRankings.map((entry) => entry.missionId)),
+    [myStoryRankings],
   );
   const currentHeroRanking = topEscapeRankings.length
     ? topEscapeRankings[rankingTickerIndex % topEscapeRankings.length]
@@ -3667,6 +3710,12 @@ export default function TripApp() {
         body: JSON.stringify({ ranking: entry }),
       });
       if (response.ok) {
+        const result = (await response.json().catch(() => null)) as { ownerKey?: string } | null;
+        if (result?.ownerKey) {
+          setEscapeRankings((prev) =>
+            prev.map((item) => (item.id === entry.id ? { ...item, ownerKey: result.ownerKey } : item)),
+          );
+        }
         setRankingStatus("live");
         setRankingMessage("방탈출 점수가 공용 랭킹에 기록되었습니다.");
         window.setTimeout(() => void refreshSharedEscapeRankings({ quiet: true }), 600);
@@ -4289,6 +4338,8 @@ export default function TripApp() {
               (lastRankingSync ? `${lastRankingSync} 기준으로 5초마다 자동 갱신됩니다.` : "5초마다 자동 갱신됩니다.")}
           </p>
         </div>
+
+        <p className="ranking-privacy-note">다른 학생의 학번과 이름은 일부를 가려서 보여 줍니다.</p>
 
         {topEscapeRankings.length > 0 ? (
           <ol>
